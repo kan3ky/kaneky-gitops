@@ -1,4 +1,4 @@
-# claude-gitops
+# kaneky-gitops
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-skill-6C4FF7)](https://docs.claude.com/en/docs/claude-code)
@@ -15,8 +15,8 @@ cluster is quietly wrong.
 ## Install
 
 ```sh
-git clone https://github.com/kan3ky/claude-gitops
-cp -r claude-gitops/skills/gitops ~/.claude/skills/
+git clone https://github.com/kan3ky/kaneky-gitops
+cp -r kaneky-gitops/skills/gitops ~/.claude/skills/
 ```
 
 No configuration. No dependencies. Ask Claude Code to review a Helm values file,
