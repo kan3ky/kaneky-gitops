@@ -1,5 +1,10 @@
 # claude-gitops
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-skill-6C4FF7)](https://docs.claude.com/en/docs/claude-code)
+[![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)](#install)
+[![Config](https://img.shields.io/badge/config-zero-brightgreen)](#install)
+
 A Claude Code skill for reviewing Kubernetes and GitOps changes — aimed at the
 failures that **pass CI, deploy green, and break anyway**.
 
@@ -17,6 +22,21 @@ cp -r claude-gitops/skills/gitops ~/.claude/skills/
 No configuration. No dependencies. Ask Claude Code to review a Helm values file,
 an Argo `Application`, an `ExternalSecret`, or a release pipeline and the skill
 loads itself.
+
+## Use it
+
+Ask in plain language. The skill loads when the work matches it.
+
+```
+Review this Argo Application before I merge it.
+Why does this app say Synced but the change isn't live?
+We're decommissioning a service — what will this leave behind?
+Our ExternalSecret is empty and the pod won't start.
+Check this release pipeline for the tag/version trap.
+```
+
+It answers with what breaks, when it surfaces, and the command that settles
+it — and says plainly when a change looks correct.
 
 ## What it catches
 
