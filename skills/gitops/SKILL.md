@@ -128,6 +128,33 @@ repo root" while the embed reads a package-local copy means bumping the root
 does nothing, and the deployed service reports a version from several releases
 ago. A test comparing the two files costs nothing and catches it permanently.
 
+**And a tag is not a deploy.** Creating a tag starts a pipeline; it does not
+publish an image, and an image updater can only roll what was published. When a
+gate fails, the tag exists, the release notes exist, and the cluster keeps
+running the previous image indefinitely.
+
+Nothing announces this. The pipeline result is one click away in a system
+nobody is watching at that moment, and the symptom surfaces somewhere else
+entirely — a version string that looks stale, an endpoint still exhibiting a
+bug you fixed. A stale version number is a deploy question, not a version
+question. Verify the pipeline passed and the image was published before
+believing anything shipped.
+
+**Build-time requirements drift too, and only a tag reveals it.** A language
+manifest can raise its required toolchain — a `go` directive, an `engines`
+field, a target framework — while the builder image stays on the old one. Where
+the toolchain is pinned to exactly what the image provides, the build refuses
+rather than fetching a newer one, and the error names a version rather than a
+cause.
+
+The gap is that the image is usually built **only on a tag**. If the
+requirement rose in an ordinary commit and no release was cut for weeks, the
+build has been broken the whole time and nothing said so. The next release
+inherits a failure it did not cause, which makes it look like the release broke
+it. Check the manifest's required toolchain against the builder image whenever
+either moves, and treat "the last tag predates this change" as the signal that
+nothing has actually compiled it yet.
+
 ## 5. The environment differs from your machine in specific ways
 
 These are container and CI defaults that do not exist locally, so they surface
@@ -159,6 +186,48 @@ performed.
   are about to change is not a backup.
 - Digest-pin images if you need to reproduce a past state. A moving tag makes
   rollback a different build than the one you ran.
+
+## 7. A workload that never starts is not monitored by anything watching outcomes
+
+The usual worry is a failure that is too quiet. This one is the opposite: it is
+loud, continuous, and still invisible, because everything watching is watching
+the wrong layer.
+
+A scheduled job referenced a secret by a name nothing created — a rename left
+the consumer pointing at the old one. The container therefore never started. The
+runtime retried it **thousands of times over hours**, burning CPU the whole
+while. And the job controller never recorded a single failed run, because a
+failure is a container that ran and exited non-zero. Nothing ran. There was no
+outcome to record.
+
+So every layer reported honestly and the sum was silence:
+
+- the controller had no failed jobs, because nothing completed
+- the deployment was untouched and healthy
+- the alerting watched job outcomes, and there were none
+- the only trace was a pod stuck in a config error and a retry counter climbing
+
+It went unnoticed for weeks.
+
+**What to take from it:**
+
+- **Alert on pods not in a running or completed state, with an age bound.**
+  Anything failing to start for more than a few minutes is worth a signal,
+  independent of what any controller says about outcomes.
+- **A scheduled job with no run history is a finding, not a quiet success.**
+  Check last-schedule against last-successful; a gap means it is not running,
+  and "no failures" reads identically to "never ran".
+- **A rename must find every reader.** Grep the whole repository for the old
+  name, including manifests owned by a different application than the one you
+  changed. This one was in a bootstrap tree, not with the service.
+- **A retry counter is a metric.** Restart and retry counts climbing on
+  something nothing else reports is often the only place the problem is
+  visible.
+
+Generalised: monitoring built around *results* cannot see work that never
+produced one. Ask what your alerting would do if a component simply stopped
+being invoked — if the answer is nothing, that is a blind spot, not an
+absence of problems.
 
 ## Reporting
 
