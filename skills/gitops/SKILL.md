@@ -166,3 +166,23 @@ Order findings by when they bite: at deploy, at next sync, at rollback, later.
 Say what you could not check and why — "no access to the Application spec"
 belongs in the report. State plainly when a change looks correct; a review that
 must find something will invent something.
+
+## References
+
+Deeper dives for specific failure classes — read the relevant one when a
+finding matches its theme:
+
+- `references/upgrade-drift.md` — a chart, policy engine, or migration upgrade
+  that leaves an orphaned resource, a control that still parses but stops
+  enforcing, a crash-looping migration, or a bundled dependency version cap.
+- `references/iac-and-node-state.md` — a state-based IaC tool (Terraform and
+  similar) failing on import ordering or a stale saved plan, or any fix
+  applied by hand to a live node instead of through the repository.
+- `references/supply-chain-and-scanning.md` — a vulnerability scan gate with
+  findings vendored inside a third-party binary rather than your own
+  dependency graph, or a container layer that looks cleaned up but still
+  contains a deleted secret.
+- `references/test-environment-parity.md` — a test double (embedded database,
+  mocked service, in-memory queue) that quietly narrows what the test suite
+  can prove, especially missing extensions/features silently untestable in a
+  lighter-weight harness.
