@@ -256,6 +256,16 @@ produced one. Ask what your alerting would do if a component simply stopped
 being invoked — if the answer is nothing, that is a blind spot, not an
 absence of problems.
 
+## Adjacent skills
+
+- **diagnosis** — the general search method when the cause is not in this
+  list, or when the symptom spans systems. This skill is the specific case;
+  that one is the class.
+- **integrations** — when the failing dependency is a third-party API or feed
+  rather than your own infrastructure.
+- **auth** — when the question is an ingress gate, a token, or who may touch
+  what.
+
 ## Reporting
 
 Order findings by when they bite: at deploy, at next sync, at rollback, later.
