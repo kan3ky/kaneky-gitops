@@ -224,6 +224,33 @@ It went unnoticed for weeks.
   something nothing else reports is often the only place the problem is
   visible.
 
+**Fixing the schedule does not fix the run that is stuck.** This is the part
+that catches people twice. A job's pod template is immutable once the job
+exists, so correcting the CronJob changes what the *next* job will look like
+and nothing about the one already running. The stuck job keeps recreating pods
+from the old, broken template — which means deleting the pod achieves nothing,
+because the job immediately makes another.
+
+Worse, if the concurrency policy is `Forbid`, that one stuck job **suppresses
+every future run**. The schedule does not fire, no new job is created, and the
+last-schedule timestamp freezes on the day it broke. A daily job can sit like
+this for a month while its own status field quietly reports the date it stopped.
+
+So the check is a pair of fields, not one:
+
+```sh
+kubectl get cronjob -A -o custom-columns=\
+NS:.metadata.namespace,NAME:.metadata.name,SCHED:.spec.schedule,\
+LAST:.status.lastScheduleTime,LASTOK:.status.lastSuccessfulTime
+```
+
+`lastSuccessfulTime: <none>` on a job that has existed for weeks means it has
+never once worked. A `lastScheduleTime` far older than the schedule implies
+means something is blocking it — look for an active job, not a failing one.
+
+**Delete the job, not the pod**, and confirm `.status.active` is empty
+afterwards.
+
 Generalised: monitoring built around *results* cannot see work that never
 produced one. Ask what your alerting would do if a component simply stopped
 being invoked — if the answer is nothing, that is a blind spot, not an
