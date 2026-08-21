@@ -1,0 +1,10 @@
+{
+  "$schema": "https://code.claude.com/schemas/plugin.json",
+  "name": "kaneky-gitops",
+  "version": "0.1.0",
+  "description": "Claude Code skill for reviewing Kubernetes and GitOps changes — the failures that pass CI, deploy green, and break anyway.",
+  "author": {
+    "name": "kan3ky",
+    "url": "https://github.com/kan3ky"
+  }
+}

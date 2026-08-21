@@ -79,6 +79,19 @@ Failure reports are the most useful contribution — especially ones where the
 pipeline stayed green. Include the symptom, the root cause, and the check that
 would have caught it.
 
+## Part of a collection
+
+One of twelve Claude Code skills about failures that look like success —
+GitOps, diagnosis, integrations, auth, end-to-end testing, visual verification,
+agent guardrails, agent memory, extraction, providers, delegation and corpus
+curation.
+
+```sh
+/plugin marketplace add kan3ky/kaneky-skills
+```
+
+Browse them at [kan3ky/kaneky-skills](https://github.com/kan3ky/kaneky-skills).
+
 ## Licence
 
 MIT.
