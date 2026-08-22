@@ -155,6 +155,24 @@ it. Check the manifest's required toolchain against the builder image whenever
 either moves, and treat "the last tag predates this change" as the signal that
 nothing has actually compiled it yet.
 
+**A default in code is not the running configuration.** Where a value is
+seeded into a database at first boot and read from there afterwards, changing
+the seed changes nothing for any row that already exists. The code is correct,
+the release ships, the deploy succeeds — and the behaviour does not move,
+because the seed path is only reached when the row is absent.
+
+This one is worse than most because every signal says success: the commit is
+right, the pipeline is green, the image is deployed, the binary genuinely
+contains the new default. The only thing that would have shown it is reading
+the value from where the runtime actually reads it.
+
+- **Before reporting a config change as done, query the store the running
+  system reads.** Not the source, not the manifest — the row.
+- **Seeding is a first-boot concern.** If a value must change for existing
+  installs, that is a migration or an admin action, and saying so is part of
+  the change rather than a follow-up someone else discovers.
+
+
 ## 5. The environment differs from your machine in specific ways
 
 These are container and CI defaults that do not exist locally, so they surface
