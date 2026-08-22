@@ -190,6 +190,16 @@ only after deploy.
 - **A tool exiting 0 has not necessarily run.** Some linters exit 0 when they
   cannot acquire a lock, so a sequential chain reports clean while doing
   nothing. Assert on the tool's own output line, not the exit code.
+- **A pipeline reports the LAST command's status, not the failing one.**
+  `run-tests | grep -v boring | head -30` exits 0 when `head` succeeds, and
+  `head` succeeds whatever the test binary did — including panicking. The
+  filtering idiom people reach for to make output readable is the same idiom
+  that discards the result, and it is invisible precisely because the surviving
+  output looks like a normal short report. Set `pipefail`, or check the status
+  of the stage you care about, or do not pipe the command whose exit code is
+  the answer. This one bites hardest in a wrapper or CI summary that prints
+  only "exit 0" — at that point the real failure is two layers away from
+  anything anyone reads.
 
 ## 6. Rollback is a claim until it is tested
 

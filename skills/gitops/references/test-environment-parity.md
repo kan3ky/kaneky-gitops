@@ -79,3 +79,56 @@ double doesn't replicate at-least-once redelivery" or "this embedded database
 has no vector extension" is one sentence, and it's the sentence that tells
 the next person which production bugs this test suite structurally cannot
 catch.
+
+## 5. A test that skips is reported as a test that passed
+
+The doubles above narrow what a suite can prove. This one is sharper: the test
+does not run at all, and the suite still reports success.
+
+The usual shape is a container-backed test that begins by starting its
+dependency and returning early when it cannot:
+
+```go
+c := testdb.Start(t)
+if c == nil {
+    return   // no container runtime here — nothing runs, nothing fails
+}
+```
+
+That early return is correct. Failing the suite on every machine without a
+container runtime would make it unrunnable, and a suite people cannot run
+locally is a suite they stop running. The problem is what the runner prints
+afterwards: `ok`. Identical to the line printed when the assertions executed and
+held.
+
+So the developer machine — the one place a mistake is cheap to fix — is
+precisely where the check is absent, and nothing on screen says so. It surfaces
+later, in CI, attributed to whoever pushed rather than to whoever wrote it.
+
+A worked example. A migration adds a column with a `NOT NULL DEFAULT`. A
+database round-trip test compares the whole struct with a deep equality check,
+so the new default arrives on the read side and the expected literal still has
+the zero value. Locally: green, because no container, so no test. In CI: a
+failure in a file the author never opened.
+
+Three things follow:
+
+- **Know which of your tests are gated on something you do not have**, and
+  treat the local run as partial until you have listed them. "The suite passed"
+  is a claim about the tests that ran.
+- **Run what CI runs, including the build tags.** A suite invoked without the
+  tag that unlocks the integration tests is a different suite. This is the
+  cheapest of the three and the most commonly skipped.
+- **When behaviour can only be asserted behind a gated test, assert it a
+  second time somewhere ungated.** A mocked or in-process path that pins the
+  same property is not redundant — it is the copy that runs on the machine
+  where the code is being written. Say so in a comment, or someone will delete
+  it as a duplicate.
+
+The generalisation, and the reason this sits in this skill: **a check that
+cannot run in an environment provides no coverage in that environment, and
+almost every runner reports "did not run" and "ran and passed" with the same
+word.** A whole-struct equality assertion is a good and deliberate choice —
+it forces a decision about every new field instead of ignoring it — but it
+converts every column addition into a two-file change, and it will only tell
+you that in the environment where it is allowed to run.
