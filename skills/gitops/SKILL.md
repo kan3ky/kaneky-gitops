@@ -190,6 +190,32 @@ only after deploy.
 - **A tool exiting 0 has not necessarily run.** Some linters exit 0 when they
   cannot acquire a lock, so a sequential chain reports clean while doing
   nothing. Assert on the tool's own output line, not the exit code.
+- **In a polyglot repo, "I ran the tests locally" names a language, not a
+  pipeline.** A Go service with a TypeScript client has two independent local
+  gates, and passing the one you think of as the real suite proves nothing
+  about the other. Two consecutive releases here built no image at all: the Go
+  suite, `go vet` and `golangci-lint` were all green, and `build:web` had been
+  failing on four lint errors since the first of them — errors in a file added
+  in that same release.
+
+  The failure is durable because nothing corrects it. The tag exists, the
+  release notes exist, the local suite is green, and the cluster quietly keeps
+  the previous image. The next release inherits the break and looks like its
+  cause.
+
+  Read the CI file and run **every** job's script, in its order, for every
+  language the repo contains — not the subset you remember. Where a job runs
+  four steps, run four; a lint that fails on step two means steps three and four
+  were never exercised either.
+- **An intermittently failing test in a gating suite is usually the CODE being
+  nondeterministic, not the test being badly written.** The reflex is to retry,
+  quarantine, or add a sleep. Measure instead: run it a few dozen times and get
+  a rate. One here failed 2 in 40 because the websocket write raced its own
+  context and could complete a frame for a caller that had already cancelled —
+  the test was asserting a property the code only usually had. An explicit check
+  made the behaviour definite, which was the better behaviour anyway, and 200
+  runs went clean. A flake you cannot explain is an unreproduced bug with a
+  known trigger.
 - **A pipeline reports the LAST command's status, not the failing one.**
   `run-tests | grep -v boring | head -30` exits 0 when `head` succeeds, and
   `head` succeeds whatever the test binary did — including panicking. The

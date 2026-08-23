@@ -81,14 +81,14 @@ would have caught it.
 
 ## Part of a collection
 
-Part of a collection of Claude Code skills about failures that look like
-success — the ones that pass review, deploy green, and are wrong anyway.
+One of a set of Claude Code skills about failures that look like success — the
+ones that pass review, deploy green, and are wrong anyway.
 
 ```sh
 /plugin marketplace add kan3ky/kaneky-skills
 ```
 
-Browse them at [kan3ky/kaneky-skills](https://github.com/kan3ky/kaneky-skills).
+The [collection](https://github.com/kan3ky/kaneky-skills) lists every skill.
 
 ## Licence
 

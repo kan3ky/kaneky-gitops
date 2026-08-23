@@ -132,3 +132,49 @@ word.** A whole-struct equality assertion is a good and deliberate choice —
 it forces a decision about every new field instead of ignoring it — but it
 converts every column addition into a two-file change, and it will only tell
 you that in the environment where it is allowed to run.
+
+
+## 6. A fixture looser than the storage it stands for
+
+A test double is usually judged on whether it behaves like the real thing. There
+is a narrower question that catches more: **does it constrain what the real
+thing constrains?**
+
+A worked example. An embedding endpoint was stubbed with a three-element vector.
+The column it feeds is `vector(1536)`. Every test passed for months. Then an
+operator selected a better embedding model in the settings UI — one returning
+3072 dimensions — and every memory write began failing, along with a semantic
+search feature shipped that same day. The suite could not have caught it: the
+fixture was more permissive than the database, so width was the one property
+the tests were structurally unable to check.
+
+The same shape appears wherever a double is *smaller* than the real thing in a
+dimension that matters: a stub returning two rows where the schema enforces a
+unique key, a fake queue that never redelivers, a mock clock that never moves
+backwards.
+
+- **Make fixtures as strict as the storage.** If a column is fixed-width, the
+  fixture is that width. If a field is `NOT NULL`, the fixture sets it.
+- **When a fixture is deliberately smaller, say what that costs.** One sentence
+  naming the property it can no longer prove.
+- Watch for tests that assert on a *small* returned value — `len(got) != 3` —
+  when production values are large. That assertion is usually a fixture
+  documenting its own laxity.
+
+## 7. A migration can pass its guard and still break boot
+
+A guard test that every migration file is registered is worth having; it catches
+files that silently never run. It does not catch a file that runs and fails.
+
+The failure: a new seed's `INSERT` column list was copied from the OLDEST
+migration in the series, naming a column later migrations had renamed. It
+registered correctly, passed the guard, and took the service down at startup
+with `column "badge" does not exist`.
+
+- **Copy a column list from the most recent insert, not the first one.** Schemas
+  drift forward; the oldest example is the least likely to still be correct.
+- **A guard that checks registration is not a guard that checks validity.** The
+  only thing that proves a migration applies is applying it, which means a
+  disposable database in the loop before release.
+- If the environment cannot run migrations locally, that is itself a finding —
+  see section 5. It means the first execution happens in front of users.
