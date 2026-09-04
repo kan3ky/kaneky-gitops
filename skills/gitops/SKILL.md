@@ -172,6 +172,32 @@ the value from where the runtime actually reads it.
   installs, that is a migration or an admin action, and saying so is part of
   the change rather than a follow-up someone else discovers.
 
+**The version lives in more places than you bumped, and the guard runs in a
+job the publisher does not wait for.** A repo with a desktop shell or a
+packaged client fans the release version across several manifests — a VERSION
+file, a language manifest, a Tauri or Electron config, a lock file. Drift tests
+that compare them are the right defence, and they only defend the jobs that
+depend on them.
+
+Observed: VERSION and a CLI copy were bumped by hand, the tag was cut, and the
+test job went red on three remaining manifests. Meanwhile the macOS desktop job
+built and published, because it declared `needs: [build:web]` and nothing else.
+The published artefact was tagged 2.151.0 and reported 2.150.0 from inside —
+the exact failure the sync script had been written to end — while the jobs that
+*did* depend on the tests were correctly skipped.
+
+- **Every job that publishes must depend on the job that validates.** Skipped
+  is a safe outcome; built-and-shipped-anyway is not. Read the `needs` of each
+  publishing job and ask what it is allowed to outrun.
+- **Look for the repo's own sync script before hand-editing any version.** It
+  usually exists, and the drift test's failure message usually names it.
+- **A sync script that covers three of four targets makes the fourth look
+  optional.** If the guard has to tell the reader to run a second command,
+  fold that command into the script. Partial automation is how the missing
+  target survives every review — the script was run, so the job looks done.
+- **Verify a version fix by running the drift tests, not by reading the
+  files.** They are the only thing that knows the full list.
+
 
 ## 5. The environment differs from your machine in specific ways
 
