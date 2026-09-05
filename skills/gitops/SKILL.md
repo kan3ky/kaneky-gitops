@@ -336,6 +336,66 @@ produced one. Ask what your alerting would do if a component simply stopped
 being invoked — if the answer is nothing, that is a blind spot, not an
 absence of problems.
 
+## 8. The alerting itself is the thing nobody alerts on
+
+Section 7 is about work that produces no outcome to watch. This is the layer
+above it: the watcher is fine, and the **delivery** is broken. Every check you
+would run says healthy, because every component genuinely is.
+
+A cluster routed Alertmanager to a webhook at an internal Service, and routed
+ArgoCD notifications to the same one. That Service had never existed — no
+namespace, no Service, no Pod, not once. The receipt was in Alertmanager's own
+metrics:
+
+```
+alertmanager_notifications_total{integration="webhook"}         170
+alertmanager_notifications_failed_total{integration="webhook"}  170
+```
+
+Attempted 170, delivered 0, over months. Pod crash-loops and unavailable
+deployments among them, each retried sixteen times into NXDOMAIN and dropped.
+
+**Why every normal check passed.** The Alertmanager pod was Running. The
+notifications controller was Running. Every Application was Synced and Healthy.
+The config files read as a complete, wired pipeline. There is no health probe
+for "the place I send things to exists", and — the part that makes this
+self-sealing — **alerting cannot alert on its own delivery.** The one system
+whose job is to tell you something is wrong is the one system with nobody
+watching it.
+
+**What to check, none of which is a status:**
+
+- **Read the two notification counters together.** `notifications_total` alone
+  is what a *working* pager looks like; it counts attempts, not arrivals. The
+  failed counter beside it is the whole signal. Same shape as registered-vs-
+  offered in capability-honesty.
+- **Resolve the destination from inside the cluster.** A webhook URL naming a
+  Service is an assertion about DNS that nothing validates at config time. One
+  `nslookup` from any pod settles it.
+- **Send one test alert end to end and confirm arrival.** Nothing else proves
+  delivery. This is the rollback-is-a-claim rule (section 6) applied to
+  alerting: an untested notification path is a hypothesis.
+- **Alert on notification failure**, if the stack can. It is the only alert
+  that survives the receiver being dead, because it fires on the counter rather
+  than through the channel.
+
+**When there is no destination, say so in the config.** A dead webhook is worse
+than none: it increments the attempt counter, so the "notifications sent" graph
+climbs while zero arrive, and it burns retries. Route to a receiver with no
+integrations and name it for what it is (`undelivered`). A route must name a
+receiver so it cannot be deleted — but an empty one counts nothing, and a flat
+line at zero is true. Disable a notifications controller outright rather than
+leaving it enabled with nowhere to deliver; a healthy component that cannot do
+its job is the failure, not the fix.
+
+**And a smaller lesson that pointed the way here.** Two comments in the repo
+described the same service and disagreed: one said the image was pinned "to the
+version the pod is already running", another said the namespace did not exist.
+Both were written confidently, months apart, by people reading rather than
+looking. **Where two comments disagree, stop reading comments and ask the
+cluster** — a comment is a claim about the past, and the only tiebreaker is
+live state.
+
 ## Adjacent skills
 
 - **diagnosis** — the general search method when the cause is not in this
